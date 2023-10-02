@@ -1,19 +1,17 @@
-# Use an official OpenJDK runtime as a parent image
-FROM adoptopenjdk/openjdk17:alpine
-
-# Set the working directory in the container
+# Use the official OpenJDK base image with Maven to build the application
+FROM maven:3.8.4-openjdk-17-slim AS build
 WORKDIR /app
+COPY ./ ./
+RUN mvn clean install -DskipTests
 
-# Copy the packaged JAR file into the container at the defined working directory
-COPY target/movies-api-backend-0.0.1-SNAPSHOT.jar /app/movies-api-backend.jar
+# Use a lightweight base image to run the application
+FROM openjdk:17-slim
+WORKDIR /app
+COPY --from=build /app/target/movies-api-backend.jar ./
 
-# Expose the port your application will run on
+# Set the server port (8082 by default)
 EXPOSE 8082
 
-# Set environment variables for MongoDB configuration
-ENV SERVER_PORT=8082
-ENV SPRING_DATA_MONGODB_DATABASE=${MONGO_DATABASE}
-ENV SPRING_DATA_MONGODB_URI=mongodb+srv://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_CLUSTER}
-
-# Define the command to run your application
+# Command to run the application
 CMD ["java", "-jar", "movies-api-backend.jar"]
+
